@@ -21,7 +21,7 @@ public class ParkourSystem : MonoBehaviour
 
     private void Update() 
     {
-        if (Input.GetKey(KeyCode.LeftAlt) && !inAction)
+        if (Input.GetButton("Jump") && !inAction)
         {
            var hitData = environmentScanner.ObjectCheck();
            if (hitData.forwardHitFound)
@@ -33,9 +33,9 @@ public class ParkourSystem : MonoBehaviour
                         StartCoroutine(DoParkourAction(action));
                         break;
                     }
-                } 
+                }
            }
-        }   
+        }
     }
 
     public IEnumerator DoParkourAction(ParkourAction action)
@@ -43,8 +43,9 @@ public class ParkourSystem : MonoBehaviour
         inAction = true;
         playerController.SetControl(false);
 
-        animator.CrossFade(action.AnimatorName, 0.2f);
-        // yield return null;
+        animator.SetBool("mirrorAction", action.MirrorAnimation);
+        animator.CrossFadeInFixedTime(action.AnimatorName, 0.2f);
+        yield return null;
 
         var animatorState = animator.GetNextAnimatorStateInfo(0);
         if (!animatorState.IsName(action.AnimatorName))
@@ -65,10 +66,30 @@ public class ParkourSystem : MonoBehaviour
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, action.TargetRotation, playerController.RotationSpeed * Time.deltaTime);
             }
 
+            if (action.EnableTargetMatching)
+            {
+                MatchTarget(action);
+            }
+
+            if (animator.IsInTransition(0) && timer > 0.5f) break;
             yield return null;
         }
 
+        yield return new WaitForSeconds(action.PostActionDelay);
+
         playerController.SetControl(true);
         inAction = false;
+    }
+
+    private void MatchTarget(ParkourAction action)
+    {
+        if (animator.isMatchingTarget || animator.IsInTransition(0)) return;
+
+        animator.MatchTarget(action.MatchPosition,
+                            transform.rotation, 
+                            action.MatchBodyPart, 
+                            new MatchTargetWeightMask(action.MatchPositionWeight, 0), 
+                            action.MatchStartTime, 
+                            action.MatchTargetTime);
     }
 }
