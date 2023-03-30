@@ -224,6 +224,10 @@ MonoBehaviour:
   framingOffset: {x: 0, y: 1}
   rotationSpeed: 2
   distanceToPlayer: 4
+  minDistanceToPlayer: 2
+  maxDistanceToPlayer: 10
+  zoomSpeed: 100
+  zoomSmoothness: 5
   minVerticalAngle: -10
   maxVerticalAngle: 45
   invertX: 0

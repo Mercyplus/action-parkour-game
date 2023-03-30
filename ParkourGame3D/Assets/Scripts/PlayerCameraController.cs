@@ -9,6 +9,10 @@ public class PlayerCameraController : MonoBehaviour
     
     [SerializeField] private float rotationSpeed = 2f;
     [SerializeField] private float distanceToPlayer = 5f;
+    [SerializeField] private float minDistanceToPlayer = 2f;
+    [SerializeField] private float maxDistanceToPlayer = 10f;
+    [SerializeField] private float zoomSpeed = 1f;
+    [SerializeField] private float zoomSmoothness = 1f;
 
     [SerializeField] private float minVerticalAngle = -45f;
     [SerializeField] private float maxVerticalAngle = 45f;
@@ -24,6 +28,11 @@ public class PlayerCameraController : MonoBehaviour
 
     private void Start() 
     {
+        LockCursor();
+    }
+
+    private void LockCursor()
+    {
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
     }
@@ -31,6 +40,7 @@ public class PlayerCameraController : MonoBehaviour
     private void Update()
     {
         SetupCameraPlayer();
+        Zoom();
     }
 
     private void SetupCameraPlayer()
@@ -49,7 +59,19 @@ public class PlayerCameraController : MonoBehaviour
         transform.rotation = targetRotation;
     }
 
-    public Quaternion GetPlanarRotation()
+    private void Zoom()
+    {
+        // Получаем значение скролла мыши
+        float scrollValue = Input.GetAxis("Mouse ScrollWheel");
+
+        // Изменяем значение distanceToPlayer с помощью линейной интерполяции
+        distanceToPlayer = Mathf.Lerp(distanceToPlayer, distanceToPlayer - scrollValue * zoomSpeed, Time.deltaTime * zoomSmoothness);
+
+        // Ограничиваем дистанцию до игрока
+        distanceToPlayer = Mathf.Clamp(distanceToPlayer, minDistanceToPlayer, maxDistanceToPlayer);
+    }
+
+    public Quaternion GetHorizontalRotation()
     {
         return Quaternion.Euler(0, rotationY, 0);
     }

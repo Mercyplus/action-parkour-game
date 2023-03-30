@@ -44,7 +44,7 @@ public class PlayerController : MonoBehaviour
 
         var moveInput = (new Vector3(horizontal, 0, vertical)).normalized;
 
-        var moveDirection = cameraController.GetPlanarRotation() * moveInput;
+        var moveDirection = cameraController.GetHorizontalRotation() * moveInput;
 
         if (!hasControl) return;
 

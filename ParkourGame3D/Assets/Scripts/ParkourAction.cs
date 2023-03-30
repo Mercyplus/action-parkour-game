@@ -25,31 +25,62 @@ public class ParkourAction : ScriptableObject
     public Vector3 MatchPosition { get; set; }
     public bool MirrorAnimation { get; set; }
 
+    // Проверяет возможность столкновения с объектом
     public virtual bool CheckIfPossible(ObjectHitData hitData, Transform player)
     {
-        // Проверка тега
+        // Проверяем соответствие тега объекта
+        if (CheckTag(hitData))
+        {
+            // Проверяем соответствие высоты объекта
+            if (CheckHeight(hitData, player))
+            {
+                // Если включено вращение к объектам, вычисляем целевую ориентацию
+                if (rotateToObjects)
+                {
+                    TargetRotation = Quaternion.LookRotation(-hitData.forwardHit.normal);
+                }
+
+                // Если включено совпадение позиций, вычисляем координаты
+                if (enableTargetMatching)
+                {
+                    MatchPosition = hitData.heightHit.point;
+                }
+
+                // Если объект соответствует всем условиям, возвращаем true
+                return true;
+            }
+        }
+
+        // Если объект не соответствует условиям, возвращаем false
+        return false;
+    }
+
+    // Проверяет соответствие тега объекта
+    private bool CheckTag(ObjectHitData hitData)
+    {
+        // Если тег объекта задан и не совпадает с заданным тегом, возвращаем false
         if (!string.IsNullOrEmpty(objectTag) && hitData.forwardHit.transform.tag != objectTag)
         {
             return false;
         }
 
-        // Тег высоты
+        // Иначе возвращаем true
+        return true;
+    }
+
+    // Проверяет соответствие высоты объекта
+    private bool CheckHeight(ObjectHitData hitData, Transform player)
+    {
+        // Вычисляем высоту объекта относительно игрока
         float height = hitData.heightHit.point.y - player.position.y;
+
+        // Если высота объекта меньше заданной минимальной высоты или больше заданной максимальной высоты, возвращаем false
         if (height < minHeight || height > maxHeight)
         {
             return false;
         }
 
-        if (rotateToObjects)
-        {
-            TargetRotation = Quaternion.LookRotation(-hitData.forwardHit.normal);
-        }
-
-        if (enableTargetMatching)
-        {
-            MatchPosition = hitData.heightHit.point;
-        }
-
+        // Иначе возвращаем true
         return true;
     }
 
