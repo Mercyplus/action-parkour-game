@@ -5,6 +5,8 @@ using UnityEngine;
 public class ParkourSystem : MonoBehaviour
 {
     [SerializeField] private List<ParkourAction> parkourActions;
+    [SerializeField] ParkourAction jumpDownAction;
+    [SerializeField] private float autoDropHeightLimit = 1f;
 
     private EnvironmentScanner environmentScanner;
     private Animator animator;
@@ -21,9 +23,10 @@ public class ParkourSystem : MonoBehaviour
 
     private void Update() 
     {
+        var hitData = environmentScanner.ObjectCheck();
+
         if (Input.GetButton("Jump") && !inAction)
         {
-           var hitData = environmentScanner.ObjectCheck();
            if (hitData.forwardHitFound)
            {
                 foreach (var action in parkourActions)
@@ -35,6 +38,21 @@ public class ParkourSystem : MonoBehaviour
                     }
                 }
            }
+        }
+
+        if (playerController.IsOnLedge && !inAction && !hitData.forwardHitFound)
+        {
+            bool shouldJump = true;
+            if (playerController.LedgeData.height > autoDropHeightLimit && !Input.GetButton("Jump"))
+            {
+                shouldJump = false;
+            }
+
+            if (shouldJump && playerController.LedgeData.angle <= 50)
+            {
+                playerController.IsOnLedge = false;
+                StartCoroutine(DoParkourAction(jumpDownAction));
+            }
         }
     }
 
