@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/GameScene.unity
-    guid: 80b47ee6ad55c23448cb798abc1d7c50
+    path: Assets/External Assets/Flooded_Grounds/Scenes/GameLevelScene.unity
+    guid: c0d944ca9defd20449bc336e50d75a08
   m_configObjects: {}

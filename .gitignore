@@ -2,6 +2,10 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/master/Unity.gitignore
 #
+
+*
+!Scripts/
+
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
@@ -9,6 +13,9 @@
 [Bb]uilds/
 [Ll]ogs/
 [Mm]emoryCaptures/
+External Assets/
+Player/
+
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 [Aa]ssets/**/*.meta

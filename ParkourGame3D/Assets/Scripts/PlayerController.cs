@@ -30,6 +30,9 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
     private bool hasControl = true;
 
+    public bool InAction { get; private set; }
+    public bool IsHanging { get; set; }
+
     private void Start()
     {
         cameraController = Camera.main.GetComponent<PlayerCameraController>();
@@ -57,6 +60,7 @@ public class PlayerController : MonoBehaviour
         moveDirection = desiredMoveDirection;
 
         if (!hasControl) return;
+        if (IsHanging) return;
 
         velocity = Vector3.zero;
 
@@ -66,7 +70,7 @@ public class PlayerController : MonoBehaviour
             ySpeed = -0.5f;
             velocity = desiredMoveDirection * moveSpeed;
 
-            IsOnLedge = environmentScanner.LedgeCheck(desiredMoveDirection, out LedgeData ledgeData);
+            IsOnLedge = environmentScanner.ObjectLedgeCheck(desiredMoveDirection, out LedgeData ledgeData);
             if (IsOnLedge)
             {
                 LedgeData = ledgeData;
@@ -127,6 +131,49 @@ public class PlayerController : MonoBehaviour
         isGrounded = Physics.CheckSphere(transform.TransformPoint(groundCheckOffset), groundCheckRadius, whatIsGround);
     }
 
+    public IEnumerator DoAction(string animatorName, MatchTargetParams matchParams=null, Quaternion targetRotation=new Quaternion(), bool rotate=false, 
+                float postDelay=0, bool mirror=false)
+    {
+        InAction = true;
+
+        animator.SetBool("mirrorAction", mirror);
+        animator.CrossFadeInFixedTime(animatorName, 0.2f);
+        yield return null;
+
+        var animatorState = animator.GetNextAnimatorStateInfo(0);
+        if (!animatorState.IsName(animatorName))
+        {
+            Debug.Log("неправильная анимация паркура ");
+        }
+
+        float rotateStartTime = (matchParams != null) ? matchParams.startTime : 0f;
+
+        float timer = 0;
+        while (timer <= animatorState.length)
+        {
+            timer += Time.deltaTime;
+            float normalizedTime = timer / animatorState.length;
+
+            // Поворот игрока в сторону препятствия
+            if (rotate && normalizedTime > rotateStartTime)
+            {
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            }
+
+            if (matchParams != null)
+            {
+                MatchTarget(matchParams);
+            }
+
+            if (animator.IsInTransition(0) && timer > 0.5f) break;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(postDelay);
+
+        InAction = false;
+    }
+
     public void SetControl(bool hasControl)
     {
         this.hasControl = hasControl;
@@ -139,10 +186,32 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public bool HasControl 
+    public void EnableCharacterController(bool enabled)
+    {
+        characterController.enabled = enabled;
+    }
+
+    public void RestTargetRotation()
+    {
+        targerRotation = transform.rotation;
+    }
+
+    public bool HasControl
     { 
         get => hasControl;
         set => hasControl = value;
+    }
+
+    private void MatchTarget(MatchTargetParams matchTargetParams)
+    {
+        if (animator.isMatchingTarget || animator.IsInTransition(0)) return;
+
+        animator.MatchTarget(matchTargetParams.position,
+                            transform.rotation, 
+                            matchTargetParams.bodyPart, 
+                            new MatchTargetWeightMask(matchTargetParams.positionWeight, 0), 
+                            matchTargetParams.startTime, 
+                            matchTargetParams.targetTime);
     }
 
     private void OnDrawGizmosSelected() 

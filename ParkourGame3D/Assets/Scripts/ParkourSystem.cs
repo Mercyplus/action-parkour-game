@@ -12,8 +12,6 @@ public class ParkourSystem : MonoBehaviour
     private Animator animator;
     private PlayerController playerController;
 
-    private bool inAction;
-
     private void Awake() 
     {
         environmentScanner = GetComponent<EnvironmentScanner>();
@@ -25,7 +23,7 @@ public class ParkourSystem : MonoBehaviour
     {
         var hitData = environmentScanner.ObjectCheck();
 
-        if (Input.GetButton("Jump") && !inAction)
+        if (Input.GetButton("Jump") && !playerController.InAction && !playerController.IsHanging)
         {
            if (hitData.forwardHitFound)
            {
@@ -40,7 +38,7 @@ public class ParkourSystem : MonoBehaviour
            }
         }
 
-        if (playerController.IsOnLedge && !inAction && !hitData.forwardHitFound)
+        if (playerController.IsOnLedge && !playerController.InAction && !hitData.forwardHitFound)
         {
             bool shouldJump = true;
             if (playerController.LedgeData.height > autoDropHeightLimit && !Input.GetButton("Jump"))
@@ -58,45 +56,25 @@ public class ParkourSystem : MonoBehaviour
 
     public IEnumerator DoParkourAction(ParkourAction action)
     {
-        inAction = true;
         playerController.SetControl(false);
 
-        animator.SetBool("mirrorAction", action.MirrorAnimation);
-        animator.CrossFadeInFixedTime(action.AnimatorName, 0.2f);
-        yield return null;
-
-        var animatorState = animator.GetNextAnimatorStateInfo(0);
-        if (!animatorState.IsName(action.AnimatorName))
+        MatchTargetParams matchParams = null;
+        if (action.EnableTargetMatching)
         {
-            Debug.Log("неправильная анимация паркура ");
+            matchParams = new MatchTargetParams()
+            {
+                position = action.MatchPosition,
+                bodyPart = action.MatchBodyPart,
+                positionWeight = action.MatchPositionWeight,
+                startTime = action.MatchStartTime,
+                targetTime = action.MatchTargetTime
+            };
         }
 
-        // yield return new WaitForSeconds(animatorState.length);
-
-        float timer = 0;
-        while (timer <= animatorState.length)
-        {
-            timer += Time.deltaTime;
-
-            // Поворот игрока в сторону препятствия
-            if (action.RotateToObjects)
-            {
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, action.TargetRotation, playerController.RotationSpeed * Time.deltaTime);
-            }
-
-            if (action.EnableTargetMatching)
-            {
-                MatchTarget(action);
-            }
-
-            if (animator.IsInTransition(0) && timer > 0.5f) break;
-            yield return null;
-        }
-
-        yield return new WaitForSeconds(action.PostActionDelay);
+        yield return playerController.DoAction(action.AnimatorName, matchParams, action.TargetRotation, 
+            action.RotateToObjects, action.PostActionDelay, action.MirrorAnimation);
 
         playerController.SetControl(true);
-        inAction = false;
     }
 
     private void MatchTarget(ParkourAction action)

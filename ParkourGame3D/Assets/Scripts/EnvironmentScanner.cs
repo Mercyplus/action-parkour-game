@@ -24,8 +24,10 @@ public class EnvironmentScanner : MonoBehaviour
     [SerializeField] private float forwardRayLength = 0.8f;
     [SerializeField] private float heightRayLength = 5f;
     [SerializeField] private float ledgeRayLength = 10f;
+    [SerializeField] private float climbLedgeRayLength = 1.5f;
     [SerializeField] private float ledgeHeightThreshold = 0.75f;
     [SerializeField] private LayerMask objectsLayer;
+    [SerializeField] private LayerMask climbLedgeLayer;
 
     public ObjectHitData ObjectCheck()
     {
@@ -47,7 +49,7 @@ public class EnvironmentScanner : MonoBehaviour
             hitData.heightHitFound = Physics.Raycast(heightOrigin, // позиция игрока + позиция луча направленная вверх
                             Vector3.down, // направление вниз
                             out hitData.heightHit, // переменная, куда записываются данные от Raycast
-                            heightRayLength, // длина луча напрвленного вверх
+                            heightRayLength, // длина луча направленного вверх
                             objectsLayer // какой слой нужно проверить
                             );
 
@@ -57,7 +59,46 @@ public class EnvironmentScanner : MonoBehaviour
         return hitData;
     }
 
-    public bool LedgeCheck(Vector3 moveDirection, out LedgeData ledgeData)
+    public bool ClimbLedgeCheck(Vector3 direction, out RaycastHit ledgeHit)
+    {
+        ledgeHit = new RaycastHit();
+        float RaycastCount = 10f;
+
+        if (direction == Vector3.zero) return false;
+
+        var origin = transform.position + Vector3.up * 1.5f; // Насколько вверх идут полоски от Raycast
+        var offset = new Vector3(0, 0.18f, 0);
+
+        for (int i = 0; i < RaycastCount; i++)
+        {
+            Debug.DrawLine(origin + offset * i, direction);
+            if (Physics.Raycast(origin + offset * i, direction, out RaycastHit hit, climbLedgeRayLength, climbLedgeLayer))
+            {
+                ledgeHit = hit;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool DropLedgeCheck(out RaycastHit ledgeHit)
+    {
+        float maxDistance = 3f;
+
+        ledgeHit = new RaycastHit();
+        var origin = transform.position + Vector3.down * 0.1f + transform.forward * 2f;
+
+        if (Physics.Raycast(origin, -transform.forward, out RaycastHit hit, maxDistance, climbLedgeLayer))
+        {
+            ledgeHit = hit;
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool ObjectLedgeCheck(Vector3 moveDirection, out LedgeData ledgeData)
     {
         ledgeData = new LedgeData();
 
